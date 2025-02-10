@@ -1,11 +1,17 @@
 import io.restassured.http.ContentType;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import static io.restassured.RestAssured.baseURI;
 import static org.hamcrest.Matchers.*;
 
+import static io.restassured.RestAssured.baseURI;
 import static io.restassured.RestAssured.given;
+import io.restassured.response.Response;
+import utils.Config;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 public class ApiRestAssuredTests {
 
@@ -32,4 +38,48 @@ public class ApiRestAssuredTests {
                 .body("email",everyItem(matchesPattern("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")));
 
     }
+
+
+    /**
+     *  Este test tiene como objetivo: crear un usuario nuevo cada vez que se ejecute
+     *  Nota: hace uso de createRequestBody y generateRandomEmail
+     */
+
+    private Map<String, String> createRequestBody(String name,String email, String gender, String status){
+        Map<String,String> requestBody = new HashMap<>();
+        requestBody.put("name", name);
+        requestBody.put("gender",gender);
+        requestBody.put("email", email);
+        requestBody.put("status", status);
+
+        return requestBody;
+    }
+
+    public String generateRandomEmail(){
+        String uniqueId = UUID.randomUUID().toString().substring(0,8);
+        return "usuarioDePruebas" + uniqueId + "@test.com";
+    }
+
+    @Test
+    public void testCreateUser(){
+        String randomEmail = generateRandomEmail();
+        String name ="usuario de pruebas";
+
+        Response response =given()
+                .header("Accept","application/json")
+                .contentType(ContentType.JSON)
+                .header("Authorization", Config.getToken())
+                .body(createRequestBody(name,randomEmail,"male","active"))
+        .when()
+                .post("/users")
+        .then()
+                //.log().all()
+                .statusCode(201)
+                .extract().response();
+        System.out.println("Se creó el usuario de id: "+response.jsonPath().getString("id"));
+
+
+    }
+
+
 }
